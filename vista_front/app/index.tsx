@@ -46,11 +46,11 @@ export default function Index() {
           <Image source={require('../assets/images/evil-larry-larry.png')} className="self-center" />
           <View className="p-4 space-y-4">
             {/* Post 1 */}
-            <View className="bg-white p-4 rounded-lg shadow-md h-72">
+            <View className="bg-white p-4 rounded-lg shadow-md h-32">
               <TextInput
                 editable
                 multiline
-                numberOfLines={4}
+                numberOfLines={2}
                 className="mt-3 text-gray-700 text-4xl"
                 placeholder="Ask a Question!"
                 placeholderTextColor="rgba(0, 0, 0, 0.2)"
