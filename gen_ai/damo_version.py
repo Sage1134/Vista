@@ -20,7 +20,7 @@ class DAMO_MODEL:
         if level == "high":
             self.quality = 10
         elif level == "med":
-            self.quality = 5
+            self.quality = 4 # 5 used to work
         else:
             self.quality = 1
         self.pipe.scheduler = DPMSolverMultistepScheduler.from_config(self.pipe.scheduler.config)
