@@ -12,10 +12,17 @@ import os
 from bread_example import BREAD_STEPS, HOW_QUESTION, HOW_TO_BAKE_BREAD, BAD_BREAD_STEPS
 
 class DAMO_MODEL:
-    def __init__(self, fps):
+    def __init__(self, fps, level="high"):
         print("Loading model...")
         start = time.time()
         self.pipe = DiffusionPipeline.from_pretrained("damo-vilab/text-to-video-ms-1.7b", torch_dtype=torch.float16, variant="fp16")
+
+        if level == "high":
+            self.quality = 10
+        elif level == "med":
+            self.quality = 5
+        else:
+            self.quality = 1
         self.pipe.scheduler = DPMSolverMultistepScheduler.from_config(self.pipe.scheduler.config)
         self.pipe.enable_model_cpu_offload()
         self.fps = fps
@@ -34,8 +41,7 @@ class DAMO_MODEL:
 
             # get first video in batch
             # started as 25 inference steps
-            # output time = num_inference_steps / fps seconds, may take longer or shorter to calculate depending on your system
-            video_frames = self.pipe(prompt, num_inference_steps=self.fps * 10 + 1).frames[0] 
+            video_frames = self.pipe(prompt, num_inference_steps=self.fps * self.quality + 1).frames[0] 
             video_path = export_to_video(video_frames, fps=self.fps, output_video_path=f"./{name}/step-{i+1}.mp4")
             video_name = video_path
             print("Name", video_name)
