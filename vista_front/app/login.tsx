@@ -12,7 +12,7 @@ import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 // import { useVideoPlayer, VideoView } from 'expo-video';
 import { Video } from 'expo-av'; // Import the Video component from expo-av
 
-export default function LoginPage(){
+export default function LoginPage({setLoggedIn}:{setLoggedIn:React.Dispatch<React.SetStateAction<boolean>>}){
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
@@ -20,9 +20,11 @@ export default function LoginPage(){
     if (email === '' || password === '') {
       Alert.alert('Error', 'Please fill out all fields.');
       return;
+    }else{
+      Alert.alert('Success', `Welcome, ${email}!`);
+      setLoggedIn(true);
     }
-    // Replace this with actual login logic (e.g., API call)
-    Alert.alert('Success', `Welcome, ${email}!`);
+
   };
 
 //   const player = useVideoPlayer(require("@/public/dancing.mp4"), player => {

@@ -86,7 +86,7 @@ export default function Index() {
     </SafeAreaProvider>
     :
     <SafeAreaProvider>
-      <LoginPage />
+      <LoginPage setLoggedIn={setIsLoggedIn}/>
     </SafeAreaProvider> 
   );
 }
