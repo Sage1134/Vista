@@ -35,3 +35,5 @@ Key Question: Are you leaving in a way that reflects well on you?
 7. Trust Yourself
 It's normal to feel nervous about leaving, but if you’ve done your due diligence and it feels right, trust your instincts. Sometimes a leap of faith is necessary for growth.
 """
+
+HOW_QUESTION = "Should I quit my job?"

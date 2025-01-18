@@ -5,27 +5,17 @@ from typing import List
 import os
 
 class DAMO_MODEL:
-    def __init__(self, fps):
+    def __init__(self, fps, level="high"):
         print("Loading model...")
         start = time.time()
-        device = 'cuda' if torch.cuda.is_available() else 'cpu'
-        print(f"================Using device: {device}")
+        self.pipe = DiffusionPipeline.from_pretrained("damo-vilab/text-to-video-ms-1.7b", torch_dtype=torch.float16, variant="fp16")
 
-        # Load pipeline
-        self.pipe = DiffusionPipeline.from_pretrained(
-            "damo-vilab/text-to-video-ms-1.7b",
-            torch_dtype=torch.float16,
-            variant="fp16"
-        ).to(device)
-
-        # Enable faster attention if xFormers is available
-        try:
-            self.pipe.enable_xformers_memory_efficient_attention()
-            print("Enabled xFormers memory-efficient attention.")
-        except Exception as e:
-            print(f"Could not enable xFormers: {e}")
-
-        # Use a faster scheduler
+        if level == "high":
+            self.quality = 10
+        elif level == "med":
+            self.quality = 4 # 5 used to work
+        else:
+            self.quality = 1
         self.pipe.scheduler = DPMSolverMultistepScheduler.from_config(self.pipe.scheduler.config)
         
         # Offload model to CPU when not in use
@@ -38,22 +28,22 @@ class DAMO_MODEL:
 
     def make_videos(self, name: str, steps: List[str]) -> None:
         try:
-            # Example of fewer steps and smaller resolution for faster generation
-            # You can tweak these values as needed
-            total_inference_steps = 10  # Fewer steps than the default
-            video_height = 128
-            video_width = 128
+            os.mkdir(name)
+        except:
+            print("Directory already exists.")
 
-            print(f"Generating video '{name}' with {len(steps)} frames at {self.fps} FPS.")
-            for idx, prompt in enumerate(steps):
-                print(f"Frame {idx+1}/{len(steps)}: {prompt}")
-                self.pipe(prompt,
-                          num_inference_steps=total_inference_steps,
-                          height=video_height,
-                          width=video_width).images
+        for i in range(len(steps)):
+            prompt=steps[i]
 
-            # ...existing code for saving or exporting the video...
-            print(f"'{name}' generation complete.")
-        except Exception as e:
-            print(f"Error making videos: {e}")
-            raise
+            # get first video in batch
+            # started as 25 inference steps
+            video_frames = self.pipe(prompt, num_inference_steps=self.fps * self.quality + 1).frames[0] 
+            video_path = export_to_video(video_frames, fps=self.fps, output_video_path=f"./{name}/step-{i+1}.mp4")
+            video_name = video_path
+            print("Name", video_name)
+            torch.cuda.empty_cache()
+
+if __name__ == "__main__":
+    damo = DAMO_MODEL()
+    damo.make_videos(name="BREAD", steps=BREAD_STEPS)
+    damo.make_videos(name="BAD BREAD", steps=BAD_BREAD_STEPS)
