@@ -4,9 +4,11 @@ import { View, Text, Image, ScrollView, TouchableOpacity, TextInput, Button,Keyb
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { useState } from 'react';
 import LoadingScreen from './loading';
+import LoginPage from './login';
 
 export default function Index() {
   const [isLoading, setIsLoading] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [inputValue, setInputValue] = useState('');
   const [savedText, setSavedText] = useState('');
 
@@ -27,7 +29,7 @@ export default function Index() {
     return <LoadingScreen />;
   }
 
-  return (
+  return ( isLoggedIn ?
     <SafeAreaProvider>
       <View className="flex-1 bg-gray-700">
         {/* Status Bar */}
@@ -82,5 +84,9 @@ export default function Index() {
         </View>
       </View>
     </SafeAreaProvider>
+    :
+    <SafeAreaProvider>
+      <LoginPage />
+    </SafeAreaProvider> 
   );
 }
