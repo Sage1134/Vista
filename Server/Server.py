@@ -1,6 +1,9 @@
 import asyncio
 import json
 import websockets
+import moviepy
+import os
+
 
 USER_STATE = {}
 """
@@ -16,6 +19,27 @@ WAITING_QUEUE = []
 
 ip = "100.66.219.46"
 port = 1134
+
+def stitch_videos(video_paths, output_path):
+    try:
+        clips = [moviepy.VideoFileClip(video) for video in video_paths]
+        final_clip = moviepy.concatenate_videoclips(clips)
+        final_clip.write_videofile(output_path, codec="libx264")
+
+        for clip in clips:
+            clip.close()
+            
+        for video in video_paths:
+            os.remove(video)
+
+        print(f"Stitched video saved to {output_path}")
+
+    except Exception as e:
+        print(f"Error stitching videos: {e}")
+
+# video_paths = ["step-1.mp4", "step-2.mp4"]
+# output_path = "stitched_video.mp4"
+# stitch_videos(video_paths, output_path)
 
 async def match_two_clients(client_a, client_b):
     USER_STATE[client_a]["status"] = "matched"

@@ -12,13 +12,11 @@ class QuestionClient:
         self.previous_state = None
 
     async def connect(self):
-        """Connect to the server and start a background reader task."""
         self.websocket = await websockets.connect(socketAddress)
         print("Connected to server.")
         self.read_task = asyncio.create_task(self._read_messages())
 
     async def ask_question(self, question: str):
-        """Send a question to be matched with another user."""
         if not self.websocket or self.websocket.closed:
             print("Not connected or already closed.")
             return
@@ -27,7 +25,6 @@ class QuestionClient:
         self.state = "waiting"
 
     async def provide_answer(self, answer: str):
-        """Send an answer to your matched partner's question."""
         if not self.websocket or self.websocket.closed:
             print("Not connected or already closed.")
             return
@@ -36,14 +33,12 @@ class QuestionClient:
         self.state = "waiting_for_partner"
 
     async def close(self):
-        """Close the WebSocket connection and stop reading."""
         if self.websocket and not self.websocket.closed:
             await self.websocket.close()
         if self.read_task:
             self.read_task.cancel()
 
     async def _read_messages(self):
-        """Continuously read and handle messages from the server."""
         try:
             async for raw_msg in self.websocket:
                 try:
