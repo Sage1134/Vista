@@ -1,23 +1,45 @@
 // Index.tsx
 import { StatusBar } from 'expo-status-bar';
-import { View, Text, Image, ScrollView, TouchableOpacity, TextInput, Button,Keyboard } from "react-native";
+import { View, Text, Image, ScrollView, TouchableOpacity, TextInput, Button,Keyboard, Alert } from "react-native";
+import { useState, useEffect } from 'react';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
-import { useState } from 'react';
 import LoadingScreen from './loading';
+import { io } from 'socket.io-client';
+
 
 export default function Index() {
   const [isLoading, setIsLoading] = useState(false);
   const [inputValue, setInputValue] = useState('');
   const [savedText, setSavedText] = useState('');
+  const [isPulsing, setIsPulsing] = useState(false);
+  const [message, setMessage] = useState<string>('');
+  
+  useEffect(() => {
+    const socket = io('ws://localhost:8080'); // Connect to the server
+  
+    // Listen for messages from the server
+    socket.on('message', (text: string) => {
+      alert(text);  // Show the broadcasted message in an alert
+    });
+  
+    return () => {
+      socket.disconnect();  // Cleanup on unmount
+    };
+  }, []);
 
   // This function will be triggered when the user clicks the "Submit" button
   const handleSubmit = () => {
     if (inputValue.trim()) {  // Check if there's any input value
       setIsLoading(true); // Set loading state to true when the user submits
       setSavedText(inputValue); // Save the input text
+
+      const socket = io('ws://localhost:8080');
+      socket.emit('message', inputValue); // Send the message to the server
+
       setTimeout(() => {
         setIsLoading(false); // Set loading state back to false after a delay (simulating an API call or process)
       }, 2000); // Simulating a delay of 2 seconds
+
     } else {
       alert('Please enter a question'); 
     }
@@ -59,12 +81,14 @@ export default function Index() {
                 blurOnSubmit={true}
               />
             </View>
+            <View className='w-full flex-row justify-center'>
             <TouchableOpacity
                 onPress={handleSubmit} // Trigger loading on submit button press
-                className="mt-4 bg-blurple py-2 px-4 rounded"
+                className="mt-4 bg-blurple h-40 w-40 rounded-full shadow-md flex align-center justify-center"
               >
                 <Text className="text-gray-300 text-center text-xl">Ask!</Text>
               </TouchableOpacity>
+            </View>
           </View>
         </SafeAreaView>
 
