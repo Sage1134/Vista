@@ -10,6 +10,7 @@ class DAMO_MODEL:
         print("Loading model...")
         start = time.time()
         self.pipe = DiffusionPipeline.from_pretrained("damo-vilab/text-to-video-ms-1.7b", torch_dtype=torch.float16, variant="fp16")
+        # self.pipe.image_size = (128, 128) # to reduce time to render - does not work
 
         if level == "high":
             self.quality = 10
