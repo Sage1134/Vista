@@ -1,6 +1,7 @@
 import time
 import torch
 from diffusers import DiffusionPipeline, DPMSolverMultistepScheduler
+from diffusers.utils import export_to_video
 from typing import List
 import os
 
@@ -44,6 +45,7 @@ class DAMO_MODEL:
             torch.cuda.empty_cache()
 
 if __name__ == "__main__":
+    from bread_example import BAD_BREAD_STEPS, BREAD_STEPS
     damo = DAMO_MODEL()
     damo.make_videos(name="BREAD", steps=BREAD_STEPS)
     damo.make_videos(name="BAD BREAD", steps=BAD_BREAD_STEPS)
