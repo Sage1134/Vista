@@ -14,6 +14,17 @@ uri = os.environ.get("MONGODB_URI")
 ip = os.environ.get("BackendIP")
 port = os.environ.get("Port")
 
+<<<<<<< HEAD
+
+async def enterQueue(clientSocket):
+    try:
+        if len(clientsInQueue) > 0:
+            otherClient = clientsInQueue.pop(0)
+            matchResponse = {"response": "Match Found"}
+
+            await clientSocket.send(json.dumps(matchResponse))
+            await otherClient.send(json.dumps(matchResponse))
+=======
 mongoClient = MongoClient(uri)
 database = mongoClient["Vista"]
 collection = database["VistaCluster"]
@@ -43,6 +54,7 @@ def getData(path):
     for key in path:
         if key in data.keys():
             data = data[key]
+>>>>>>> 8e5753662ddcd94fd7f6943ff5f5d699d025f2e6
         else:
             return None
         
@@ -254,6 +266,11 @@ async def client_handler(client):
         "partner": None
     }
 
+<<<<<<< HEAD
+
+async def newClientConnected(clientSocket, path):
+=======
+>>>>>>> 8e5753662ddcd94fd7f6943ff5f5d699d025f2e6
     try:
         async for raw_msg in client:
             try:
@@ -270,6 +287,15 @@ async def client_handler(client):
         if client in WAITING_QUEUE:
             WAITING_QUEUE.remove(client)
 
+<<<<<<< HEAD
+
+async def startServer():
+    print(f"Server started on {ip}:{port}")
+    server = await websockets.serve(newClientConnected, ip, port)
+    await server.wait_closed()
+
+asyncio.run(startServer())
+=======
         partner = USER_STATE[client].get("partner")
         if partner:
             USER_STATE[partner]["partner"] = None
@@ -288,3 +314,4 @@ async def main():
 
 if __name__ == "__main__":
     asyncio.run(main())
+>>>>>>> 8e5753662ddcd94fd7f6943ff5f5d699d025f2e6
