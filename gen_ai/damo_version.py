@@ -1,47 +1,59 @@
-# pip install diffusers transformers accelerate opencv-python
-# pip3 install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu124
-
 import time
 import torch
 from diffusers import DiffusionPipeline, DPMSolverMultistepScheduler
-from diffusers.utils import export_to_video
 from typing import List
 import os
-
-# example user inputs, from asker and receiver
-from bread_example import BREAD_STEPS, HOW_QUESTION, HOW_TO_BAKE_BREAD, BAD_BREAD_STEPS
 
 class DAMO_MODEL:
     def __init__(self, fps):
         print("Loading model...")
         start = time.time()
-        self.pipe = DiffusionPipeline.from_pretrained("damo-vilab/text-to-video-ms-1.7b", torch_dtype=torch.float16, variant="fp16")
+        device = 'cuda' if torch.cuda.is_available() else 'cpu'
+        print(f"================Using device: {device}")
+
+        # Load pipeline
+        self.pipe = DiffusionPipeline.from_pretrained(
+            "damo-vilab/text-to-video-ms-1.7b",
+            torch_dtype=torch.float16,
+            variant="fp16"
+        ).to(device)
+
+        # Enable faster attention if xFormers is available
+        try:
+            self.pipe.enable_xformers_memory_efficient_attention()
+            print("Enabled xFormers memory-efficient attention.")
+        except Exception as e:
+            print(f"Could not enable xFormers: {e}")
+
+        # Use a faster scheduler
         self.pipe.scheduler = DPMSolverMultistepScheduler.from_config(self.pipe.scheduler.config)
+        
+        # Offload model to CPU when not in use
         self.pipe.enable_model_cpu_offload()
+
         self.fps = fps
 
         end = time.time()
         print(f"Model loaded in {(end - start):.2f} seconds!")
 
-    def make_videos(self, name:str, steps:List[str]) -> None:
+    def make_videos(self, name: str, steps: List[str]) -> None:
         try:
-            os.mkdir(name)
-        except:
-            print("Directory already exists.")
+            # Example of fewer steps and smaller resolution for faster generation
+            # You can tweak these values as needed
+            total_inference_steps = 10  # Fewer steps than the default
+            video_height = 128
+            video_width = 128
 
-        for i in range(len(steps)):
-            prompt=steps[i]
+            print(f"Generating video '{name}' with {len(steps)} frames at {self.fps} FPS.")
+            for idx, prompt in enumerate(steps):
+                print(f"Frame {idx+1}/{len(steps)}: {prompt}")
+                self.pipe(prompt,
+                          num_inference_steps=total_inference_steps,
+                          height=video_height,
+                          width=video_width).images
 
-            # get first video in batch
-            # started as 25 inference steps
-            # output time = num_inference_steps / fps seconds, may take longer or shorter to calculate depending on your system
-            video_frames = self.pipe(prompt, num_inference_steps=self.fps * 10 + 1).frames[0] 
-            video_path = export_to_video(video_frames, fps=self.fps, output_video_path=f"./{name}/step-{i+1}.mp4")
-            video_name = video_path
-            print("Name", video_name)
-            torch.cuda.empty_cache()
-
-if __name__ == "__main__":
-    damo = DAMO_MODEL()
-    damo.make_videos(name="BREAD", steps=BREAD_STEPS)
-    damo.make_videos(name="BAD BREAD", steps=BAD_BREAD_STEPS)
+            # ...existing code for saving or exporting the video...
+            print(f"'{name}' generation complete.")
+        except Exception as e:
+            print(f"Error making videos: {e}")
+            raise

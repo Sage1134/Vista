@@ -1,3 +1,9 @@
+import torch
+
+# Verify GPU usage
+print("Num GPUs Available: ", torch.cuda.device_count())
+print("CUDA available: ", torch.cuda.is_available())
+
 from damo_version import DAMO_MODEL
 from openai import OpenAI
 from os import getenv
@@ -5,7 +11,7 @@ from typing import List
 from dotenv import load_dotenv, find_dotenv
 
 class VideoMaker:
-    def __init__(self, fps=5):
+    def __init__(self, fps=3):
         load_dotenv(find_dotenv())
         api_key = getenv("OPENAI_API_KEY")
         self.client = OpenAI(api_key=api_key)
@@ -51,7 +57,7 @@ class VideoMaker:
 
 
 if __name__ == "__main__":
-    vmaker = VideoMaker(fps=10)
+    vmaker = VideoMaker(fps=3)
 
     # ChatGPT decides what output format is best
         # e.g. Cooking bread -> Instructional video w/ audio
