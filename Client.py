@@ -18,7 +18,6 @@ class QuestionClient:
 
     async def ask_question(self, question: str):
         if not self.websocket or self.websocket.closed:
-            print("Not connected or already closed.")
             return
         msg = {"purpose": "askQuestion", "question": question}
         await self.websocket.send(json.dumps(msg))
@@ -26,11 +25,16 @@ class QuestionClient:
 
     async def provide_answer(self, answer: str):
         if not self.websocket or self.websocket.closed:
-            print("Not connected or already closed.")
             return
         msg = {"purpose": "provideAnswer", "answer": answer}
         await self.websocket.send(json.dumps(msg))
         self.state = "waiting_for_partner"
+
+    async def sign_in(self, username: str, password: str):
+        if not self.websocket or self.websocket.closed:
+            return
+        msg = {"purpose": "signIn", "username": username, "password": password}
+        await self.websocket.send(json.dumps(msg))
 
     async def close(self):
         if self.websocket and not self.websocket.closed:
@@ -46,8 +50,17 @@ class QuestionClient:
                 except json.JSONDecodeError:
                     print("[Error] Invalid JSON received:", raw_msg)
                     continue
-
-                if msg.get("response") == "waiting":
+                if msg.get("response") == "fail":
+                    print("Server refused.")
+                elif msg.get("response") == "registerSuccess":
+                    print("Registration successful.")
+                elif msg.get("response") == "usernameAlreadyTaken":
+                    print("Username already taken.")
+                elif msg.get("response") == "signInSuccess":
+                    sessionID = msg.get("sessionID")
+                elif msg.get("response") == "signOutSuccess":
+                    del sessionID
+                elif msg.get("response") == "waiting":
                     print("Waiting for a match...")
                 elif msg.get("response") == "matchFound":
                     their_question = msg["question"]
@@ -92,3 +105,9 @@ async def main():
 
 if __name__ == "__main__":
     asyncio.run(main())
+
+"""
+    username = blah
+    password = blah
+    await client.sign_in(username, password)
+"""
