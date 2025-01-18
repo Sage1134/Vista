@@ -6,29 +6,37 @@ import torch
 from diffusers import DiffusionPipeline, DPMSolverMultistepScheduler
 from diffusers.utils import export_to_video
 from typing import List
+import os
 
 # example user inputs, from asker and receiver
 from bread_example import BREAD_STEPS, HOW_QUESTION, HOW_TO_BAKE_BREAD, BAD_BREAD_STEPS
 
 class DAMO_MODEL:
-    def __init__(self):
+    def __init__(self, fps):
         print("Loading model...")
         start = time.time()
         self.pipe = DiffusionPipeline.from_pretrained("damo-vilab/text-to-video-ms-1.7b", torch_dtype=torch.float16, variant="fp16")
         self.pipe.scheduler = DPMSolverMultistepScheduler.from_config(self.pipe.scheduler.config)
         self.pipe.enable_model_cpu_offload()
+        self.fps = fps
 
         end = time.time()
         print(f"Model loaded in {(end - start):.2f} seconds!")
 
     def make_videos(self, name:str, steps:List[str]) -> None:
+        try:
+            os.mkdir(name)
+        except:
+            print("Directory already exists.")
+
         for i in range(len(steps)):
             prompt=steps[i]
 
             # get first video in batch
             # started as 25 inference steps
-            video_frames = self.pipe(prompt, num_inference_steps=125).frames[0] 
-            video_path = export_to_video(video_frames, fps=10, output_video_path=f"{name}-step-{i+1}.mp4")
+            # output time = num_inference_steps / fps seconds, may take longer or shorter to calculate depending on your system
+            video_frames = self.pipe(prompt, num_inference_steps=self.fps * 10 + 1).frames[0] 
+            video_path = export_to_video(video_frames, fps=self.fps, output_video_path=f"./{name}/step-{i+1}.mp4")
             video_name = video_path
             print("Name", video_name)
             torch.cuda.empty_cache()
