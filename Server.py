@@ -2,27 +2,38 @@ import websockets
 import asyncio
 import json
 
-connectedClients = set()
+clientsInQueue = []
 
 ip = "100.66.219.46"
 port = 1134
 
-async def testing(client_socket, data):
+async def enterQueue(clientSocket, data):
     try:
-        data = {"response": data["test"] + "Test"}
-        await client_socket.send(json.dumps(data))
-    except:
-        pass
+        if len(clientsInQueue) != 0:
+            otherClient = clientsInQueue.pop(0)
+            matchResponse = {"response": "Match Found"}
+            
+            await clientSocket.send(json.dumps(matchResponse))
+            await otherClient.send(json.dumps(matchResponse))
+        else:
+            clientsInQueue.append(clientSocket)
+            await clientSocket.send(json.dumps({"response": "Waiting for a match..."}))
+            
+            async for message in clientSocket:
+                pass
+    except Exception as e:
+        print(f"Error in enterQueue: {e}")
     finally:
-        connectedClients.remove(client_socket)
+        if clientSocket in clientsInQueue:
+            clientsInQueue.remove(clientSocket)
 
-async def newClientConnected(client_socket):
+
+async def newClientConnected(clientSocket):
     try:
-        connectedClients.add(client_socket)
-        data = await client_socket.recv()
+        data = await clientSocket.recv()
         data = json.loads(data)
-        if data["purpose"] == "testing":
-            await testing(client_socket, data)
+        if data["purpose"] == "enterQueue":
+            await enterQueue(clientSocket, data)
     except:
         pass
 

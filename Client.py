@@ -9,15 +9,15 @@ async def toServer(purpose, data):
     
     async with websockets.connect(socketAddress) as websocket:
         await websocket.send(json.dumps(data))
-        
+
         response = await websocket.recv()
         response = json.loads(response)
         return response
 
 async def main():
-    testData = {"test": "Hi Peter "}
+    testData = {}
     
-    response = await toServer("testing", testData)
+    response = await toServer("enterQueue", testData)
     print(response["response"])
 
 asyncio.run(main())
