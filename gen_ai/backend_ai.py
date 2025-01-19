@@ -1,5 +1,5 @@
 import torch
-from damo_version import DAMO_MODEL
+from .damo_version import DAMO_MODEL
 from openai import OpenAI
 from os import getenv
 from typing import List
