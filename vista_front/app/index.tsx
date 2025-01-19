@@ -27,7 +27,11 @@ export default function Index() {
       }, 2000); // Simulating a delay of 2 seconds
 
     } else {
+<<<<<<< HEAD
       alert('Please enter a question'); 
+=======
+        setIsBouncing(false);
+>>>>>>> 812db63a (efafa)
     }
   };
 
