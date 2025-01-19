@@ -34,20 +34,11 @@ export default function LoginPage({setLoggedIn}:{setLoggedIn:React.Dispatch<Reac
 
   return (
     <SafeAreaProvider>
-        {/* <Video 
-            source={require()}
-            className="absolute inset-0 h-full"
-            muted={true}
-            repeat={true}
-            resizeMode={"cover"}
-            rate={1.0}
-            ignoreSilentSwitch={"obey"}
-        /> */}
         <View className='flex flex-1 justify-center items-center p-5 bg-gray-700'>        
             {/* <View style={{ flex: 1, position: "relative" }}> */}
                 {/* Video Component */}
                 <Video
-                    source={require('@/public/dancing-video-darkened.mp4')} // Path to your video file
+                    source={require('@/assets/dancing-video-darkened.mp4')} // Path to your video file
                     style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }} // Full screen positioning
                     shouldPlay
                     isLooping
@@ -55,22 +46,9 @@ export default function LoginPage({setLoggedIn}:{setLoggedIn:React.Dispatch<Reac
                     resizeMode="cover"
                 />
 
-                {/* Translucent Grey Film */}
-                {/* <View
-                    style={{
-                      position: 'absolute',
-                      top: 0,
-                      left: 0,
-                      right: 0,
-                      bottom: 0,
-                      backgroundColor: 'rgba(0, 0, 0, 0.5)', // Translucent grey film
-                      zIndex: 0
-                    }}
-                /> */}
-            {/* </View> */}
 
             <SafeAreaView className="flex-row justify-center px-4 py-3">
-                <Text className="text-8xl font-bold text-blurple font-rubik">VISTA</Text>
+              <Text className="text-8xl font-bold text-blurple font-rubik">VISTA</Text>
             </SafeAreaView>
             <Text className='text-2xl font-bold mb-10 text-white'>See a new perspective.</Text>
 
