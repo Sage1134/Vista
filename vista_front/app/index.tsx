@@ -130,8 +130,7 @@ export default function Index() {
         showModal('waiting');
       }
     } else {
-      showModal('Please enter text in the input field');
-      setIsBouncing(false);
+        setIsBouncing(false);
     }
   };
 
