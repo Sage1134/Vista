@@ -1,168 +1,68 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, TextInput, Button, ScrollView, StyleSheet } from 'react-native';
+import React, { useState } from 'react';
+import { io } from 'socket.io-client';
+import { View, Text, TextInput, TouchableOpacity, Alert } from 'react-native';
+import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
+import { Video, ResizeMode } from 'expo-av';
 
-type ClientState = 'idle' | 'waiting' | 'matched' | 'waiting_for_partner';
-const socketAddress = 'ws://100.66.219.46:1134';
+export default function LoginPage({ setLoggedIn }: { setLoggedIn: React.Dispatch<React.SetStateAction<boolean>> }) {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
 
-export default function ClientApp() {
-  const [ws, setWs] = useState<WebSocket | null>(null);
-  const [clientState, setClientState] = useState<ClientState>('idle');
-  const [previousState, setPreviousState] = useState<ClientState | null>(null);
-  const [messageLog, setMessageLog] = useState<string[]>([]);
-  const [inputText, setInputText] = useState('');
+  // Create WebSocket connection when component is mounted
 
-  // Connect on mount
-  useEffect(() => {
-    const socket = new WebSocket(socketAddress);
-
-    socket.onopen = () => {
-      logMessage('Connected to server.');
-      setWs(socket);
-    };
-    socket.onmessage = (event) => {
-      try {
-        const msg = JSON.parse(event.data);
-        handleServerMessage(msg);
-      } catch (err) {
-        logMessage('[Error] Invalid JSON received.');
-      }
-    };
-    socket.onclose = () => {
-      logMessage('Connection closed by server.');
-    };
-    socket.onerror = (err) => {
-      logMessage(`[Error] ${JSON.stringify(err)}`);
-    };
-
-    return () => {
-      socket.close();
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  // Check for state changes
-  useEffect(() => {
-    if (clientState !== previousState) {
-      // Simulate client.py's while loop detection
-      if (clientState === 'idle') {
-        logMessage('Enter your question and press Send');
-      } else if (clientState === 'matched') {
-        logMessage('Enter your answer and press Send');
-      } else if (clientState === 'waiting_for_partner') {
-        logMessage('Waiting for your partner to answer...');
-      }
-      setPreviousState(clientState);
-    }
-  }, [clientState, previousState]);
-
-  function handleServerMessage(msg: any) {
-    if (msg.response === 'waiting') {
-      logMessage('Waiting for a match...');
-      setClientState('waiting');
-    } else if (msg.response === 'matchFound') {
-      logMessage(`[Matched!] Partner's question: ${msg.question}`);
-      setClientState('matched');
-    } else if (msg.response === 'answerReceived') {
-      logMessage(`[Answer received!] Your partner's advice: ${msg.answer}`);
-      setClientState('idle');
-    } else if (msg.response === 'partnerDisconnected') {
-      logMessage('[Notification] Your partner disconnected.');
-      setClientState('idle');
-    } else if (msg.error) {
-      logMessage(`[Error] ${msg.error}`);
-    } else {
-      logMessage(`[Server message] ${JSON.stringify(msg)}`);
-    }
-  }
-
-  function logMessage(message: string) {
-    setMessageLog((prev) => [...prev, message]);
-  }
-
-  function sendJson(obj: any) {
-    if (!ws || ws.readyState !== WebSocket.OPEN) {
-      logMessage('Not connected or already closed.');
+  const handleLogin = () => {
+    if (email === '' || password === '') {
+      Alert.alert('Error', 'Please fill out all fields.');
       return;
-    }
-    ws.send(JSON.stringify(obj));
-  }
-
-  function handleSend() {
-    if (clientState === 'idle') {
-      // askQuestion
-      const msg = { purpose: 'askQuestion', question: inputText };
-      sendJson(msg);
-      setClientState('waiting');
-      setInputText('');
-    } else if (clientState === 'matched') {
-      // provideAnswer
-      const msg = { purpose: 'provideAnswer', answer: inputText };
-      sendJson(msg);
-      setClientState('waiting_for_partner');
-      setInputText('');
     } else {
-      logMessage('Cannot send now. Currently waiting or in invalid state.');
+      Alert.alert('Success', `Welcome, ${email}!`);
+      setLoggedIn(true);
+      
     }
-  }
+  };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>QuestionClient (TSX)</Text>
-      <View style={styles.inputRow}>
-        <TextInput
-          style={styles.input}
-          placeholder={clientState === 'idle' ? 'Enter your question...' : 'Enter your answer...'}
-          value={inputText}
-          onChangeText={setInputText}
+    <SafeAreaProvider>
+      <View className='flex flex-1 justify-center items-center p-5 bg-gray-700'>
+        <Video
+          source={require('@/assets/dancing-video-darkened.mp4')}
+          style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
+          shouldPlay
+          isLooping
+          isMuted
+          resizeMode={ResizeMode.COVER}
         />
-        <Button title="Send" onPress={handleSend} />
+        <SafeAreaView className="flex-row justify-center px-4 py-3">
+          <Text className="text-8xl font-bold text-blurple font-rubik">VISTA</Text>
+        </SafeAreaView>
+        <Text className='text-2xl font-bold mb-10 text-white'>See a new perspective.</Text>
+
+        <TextInput
+          className="w-full h-12 border border-gray-300 rounded-lg px-2.5 mb-5 bg-white"
+          placeholder="Email"
+          placeholderTextColor="gray"
+          keyboardType="email-address"
+          value={email}
+          onChangeText={setEmail}
+        />
+
+        <TextInput
+          className="w-full h-12 border border-gray-300 rounded-lg px-2.5 mb-5 bg-white"
+          placeholder="Password"
+          placeholderTextColor="gray"
+          secureTextEntry
+          value={password}
+          onChangeText={setPassword}
+        />
+
+        <TouchableOpacity className="w-full h-12 bg-blurple flex justify-center items-center rounded-lg" onPress={handleLogin}>
+          <Text className="text-white text-lg font-bold">Login</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity className="w-full h-12 bg-white flex justify-center items-center rounded-lg mt-2" onPress={handleLogin}>
+          <Text className="text-blurple text-lg font-bold">No Account? Sign Up Today!</Text>
+        </TouchableOpacity>
       </View>
-      <Text style={styles.stateText}>State: {clientState}</Text>
-      <ScrollView style={styles.logBox}>
-        {messageLog.map((line, idx) => (
-          <Text key={idx} style={styles.logText}>
-            {line}
-          </Text>
-        ))}
-      </ScrollView>
-    </View>
+    </SafeAreaProvider>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    padding: 20,
-    flex: 1,
-    backgroundColor: '#ffffff',
-  },
-  title: {
-    fontSize: 18,
-    marginBottom: 12,
-    fontWeight: 'bold',
-  },
-  inputRow: {
-    flexDirection: 'row',
-    marginBottom: 10,
-  },
-  input: {
-    flex: 1,
-    borderColor: '#aaa',
-    borderWidth: 1,
-    marginRight: 8,
-    padding: 5,
-  },
-  stateText: {
-    marginBottom: 8,
-    fontStyle: 'italic',
-  },
-  logBox: {
-    flex: 1,
-    marginTop: 10,
-    backgroundColor: '#f0f0f0',
-    padding: 8,
-  },
-  logText: {
-    marginVertical: 2,
-    fontSize: 14,
-  },
-});
