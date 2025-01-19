@@ -169,5 +169,12 @@ cython_debug/
 
 # PyPI configuration file
 .pypirc
+<<<<<<< HEAD
 
 vars.env
+<<<<<<< HEAD
+=======
+=======
+/node_modules
+>>>>>>> f228134086c643e670a83c634299c35ef3d9c2e1
+>>>>>>> peta

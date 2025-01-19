@@ -1,40 +1,24 @@
 // Index.tsx
 import { StatusBar } from 'expo-status-bar';
-import { View, Text, Image, ScrollView, TouchableOpacity, TextInput, Button,Keyboard, Alert } from "react-native";
+import { View, Text, Image, ScrollView, TouchableOpacity, TextInput, Platform,KeyboardAvoidingView, Alert, ImageBackground} from "react-native";
 import { useState, useEffect } from 'react';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import LoadingScreen from './loading';
-import { io } from 'socket.io-client';
+import LoginPage from './login';
 
 
 export default function Index() {
   const [isLoading, setIsLoading] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [inputValue, setInputValue] = useState('');
   const [savedText, setSavedText] = useState('');
-  const [isPulsing, setIsPulsing] = useState(false);
   const [message, setMessage] = useState<string>('');
   
-  useEffect(() => {
-    const socket = io('ws://localhost:8080'); // Connect to the server
-  
-    // Listen for messages from the server
-    socket.on('message', (text: string) => {
-      alert(text);  // Show the broadcasted message in an alert
-    });
-  
-    return () => {
-      socket.disconnect();  // Cleanup on unmount
-    };
-  }, []);
-
   // This function will be triggered when the user clicks the "Submit" button
   const handleSubmit = () => {
     if (inputValue.trim()) {  // Check if there's any input value
       setIsLoading(true); // Set loading state to true when the user submits
       setSavedText(inputValue); // Save the input text
-
-      const socket = io('ws://localhost:8080');
-      socket.emit('message', inputValue); // Send the message to the server
 
       setTimeout(() => {
         setIsLoading(false); // Set loading state back to false after a delay (simulating an API call or process)
@@ -49,47 +33,44 @@ export default function Index() {
     return <LoadingScreen />;
   }
 
-  return (
+  return ( isLoggedIn ?
     <SafeAreaProvider>
-      <View className="flex-1 bg-gray-700">
+      <ImageBackground source={require('../assets/images/homebg.png')} resizeMode="cover" className="flex-1">
         {/* Status Bar */}
         <StatusBar style="light" />
 
-        {/* Header */}
-        <SafeAreaView className="flex-row items-center justify-between px-4 py-3 bg-gray-800 shadow-md">
-          <Text className="text-5xl font-bold text-blurple font-rubik">VISTA</Text>
-          <View className="flex-row space-x-4">
-            <Text className="text-white font-rubik text-xl">Hello Peter</Text>
-          </View>
-        </SafeAreaView>
-
         {/* Feed */}
         <SafeAreaView>
-          <Image source={require('../assets/images/evil-larry-larry.png')} className="self-center" />
-          <View className="p-4 space-y-4">
-            {/* Post 1 */}
-            <View className="bg-white p-4 rounded-lg shadow-md h-32">
-              <TextInput
-                editable
-                multiline
-                numberOfLines={2}
-                className="mt-3 text-gray-700 text-4xl"
-                placeholder="Ask a Question!"
-                placeholderTextColor="rgba(0, 0, 0, 0.2)"
-                value={inputValue}
-                onChangeText={setInputValue} // Update input value state
-                blurOnSubmit={true}
-              />
-            </View>
-            <View className='w-full flex-row justify-center'>
-            <TouchableOpacity
-                onPress={handleSubmit} // Trigger loading on submit button press
-                className="mt-4 bg-blurple h-40 w-40 rounded-full shadow-md flex align-center justify-center"
-              >
-                <Text className="text-gray-300 text-center text-xl">Ask!</Text>
-              </TouchableOpacity>
+          <View className="flex-col items-center justify-between py-6 shadow-md">
+            <Text className="text-8xl font-bold text-white font-rubik">VISTA</Text>
+            <View className="flex-row space-x-4">
+              <Text className="text-white font-rubik text-4xl">Hello BLANK</Text>
             </View>
           </View>
+          <TouchableOpacity
+                  onPress={handleSubmit} // Trigger loading on submit button press
+                  className='w-48 h-48 bg-white border-solid border-black border-4 rounded-full shadow-md flex items-center self-center justify-center mt-32 mb-20'>
+            <Image source={require('../assets/images/Logo.png')} className=" w-32 h-32 self-center" />
+          </TouchableOpacity>
+
+          <View
+      className="p-4 space-y-4"
+    >
+      <View className="bg-white p-4 rounded-lg shadow-md h-32">
+        <TextInput
+          editable
+          multiline
+          numberOfLines={2}
+          className="mt-3 text-gray-700 text-4xl"
+          placeholder="Ask a Question!"
+          placeholderTextColor="rgba(0, 0, 0, 0.2)"
+          value={inputValue}
+          onChangeText={setInputValue}
+          blurOnSubmit={true}
+        />
+      </View>
+    </View>
+
         </SafeAreaView>
 
         {/* Bottom Navigation */}
@@ -104,7 +85,11 @@ export default function Index() {
             <Image source={require('../assets/images/menu-burger.png')} className="w-10 h-10" />
           </TouchableOpacity>
         </View>
-      </View>
+      </ImageBackground>
     </SafeAreaProvider>
+    :
+    <SafeAreaProvider>
+      <LoginPage setLoggedIn={setIsLoggedIn}/>
+    </SafeAreaProvider> 
   );
 }
