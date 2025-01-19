@@ -1,27 +1,16 @@
 import asyncio
-import websockets
 import json
+import websockets
 
-<<<<<<< HEAD
-socketAddress = "ws://100.66.219.46:8080"
-=======
 socketAddress = "ws://100.66.219.46:1134"
->>>>>>> beda3aadd34c7192ef12115f70387197df2975d5
 
+class QuestionClient:
+    def __init__(self):
+        self.websocket = None
+        self.read_task = None
+        self.state = "idle"  # Possible states: idle, waiting, matched, waiting_for_partner
+        self.previous_state = None
 
-<<<<<<< HEAD
-async def handle_client(websocket, path):
-    async for message in websocket:
-        try:
-            msg = json.loads(message)
-            if msg["purpose"] == "signIn":
-                username = msg["username"]
-                password = msg["password"]
-                # Handle the login logic here
-                if username == "correctUsername" and password == "correctPassword":  # Example check
-                    response = {"response": "signInSuccess",
-                                "username": username, "sessionID": "dummySessionID"}
-=======
     async def connect(self):
         """Connect to the server and start a background reader task."""
         self.websocket = await websockets.connect(socketAddress)
@@ -77,21 +66,34 @@ async def handle_client(websocket, path):
                     self.state = "idle"
                 elif msg.get("error"):
                     print(f"[Error] {msg['error']}")
->>>>>>> beda3aadd34c7192ef12115f70387197df2975d5
                 else:
-                    response = {"response": "fail"}
-                await websocket.send(json.dumps(response))
+                    print("[Server message]", msg)
+        except asyncio.CancelledError:
+            pass
+        except websockets.ConnectionClosed:
+            print("Connection closed by server.")
         except Exception as e:
-            print(f"Error handling message: {e}")
+            print("Error in read loop:", e)
 
 async def main():
-    server = await websockets.serve(handle_client, "0.0.0.0", 8080)
-    print("Server started on ws://0.0.0.0:8080")
-    await server.wait_closed()
+    client = QuestionClient()
+    await client.connect()
+
+    try:
+        while True:
+            if client.state != client.previous_state:
+                if client.state == "idle":
+                    question = input("Enter your question: ").strip()
+                    await client.ask_question(question)
+                elif client.state == "matched":
+                    answer = input("Enter your answer: ").strip()
+                    await client.provide_answer(answer)
+                elif client.state == "waiting_for_partner":
+                    print("Waiting for your partner to answer...")
+                client.previous_state = client.state
+            await asyncio.sleep(0.1)
+    finally:
+        await client.close()
 
 if __name__ == "__main__":
-<<<<<<< HEAD
     asyncio.run(main())
-=======
-    asyncio.run(main())
->>>>>>> beda3aadd34c7192ef12115f70387197df2975d5
