@@ -135,6 +135,7 @@ venv/
 ENV/
 env.bak/
 venv.bak/
+env
 
 # Spyder project settings
 .spyderproject
@@ -170,5 +171,7 @@ cython_debug/
 # PyPI configuration file
 .pypirc
 
-vars.env
 /node_modules
+
+/vista-venv
+
