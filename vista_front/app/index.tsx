@@ -15,16 +15,16 @@ export default function Index() {
   const [message, setMessage] = useState<string>('');
   
   useEffect(() => {
-    const socket = io('ws://localhost:8080'); // Connect to the server
+    const socket = io('ws://192.168.137.116:8080'); // Connect to the server
   
     // Listen for messages from the server
     socket.on('message', (text: string) => {
       alert(text);  // Show the broadcasted message in an alert
     });
   
-    return () => {
-      socket.disconnect();  // Cleanup on unmount
-    };
+    // return () => {
+    //   socket.disconnect();  // Cleanup on unmount
+    // };
   }, []);
 
   // This function will be triggered when the user clicks the "Submit" button
@@ -33,7 +33,7 @@ export default function Index() {
       setIsLoading(true); // Set loading state to true when the user submits
       setSavedText(inputValue); // Save the input text
 
-      const socket = io('ws://localhost:8080');
+      const socket = io('ws://192.168.137.116:8080');
       socket.emit('message', inputValue); // Send the message to the server
 
       setTimeout(() => {
