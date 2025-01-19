@@ -1,6 +1,8 @@
 // note that when hosting on windows, it requires turning your firewall off.
 
 import React, { useState } from 'react';
+import { io } from 'socket.io-client';
+
 import {
   View,
   Text,
@@ -10,11 +12,13 @@ import {
 } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 // import { useVideoPlayer, VideoView } from 'expo-video';
-import { Video } from 'expo-av'; // Import the Video component from expo-av
+import { Video, ResizeMode } from 'expo-av'; // Import the Video component and ResizeMode enum from expo-av
 
 export default function LoginPage({setLoggedIn}:{setLoggedIn:React.Dispatch<React.SetStateAction<boolean>>}){
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+
+  const socket = io('ws://192.168.137.116:8080'); 
 
   const handleLogin = () => {
     if (email === '' || password === '') {
@@ -23,6 +27,7 @@ export default function LoginPage({setLoggedIn}:{setLoggedIn:React.Dispatch<Reac
     }else{
       Alert.alert('Success', `Welcome, ${email}!`);
       setLoggedIn(true);
+      socket.emit('login', email);
     }
 
   };
@@ -43,7 +48,7 @@ export default function LoginPage({setLoggedIn}:{setLoggedIn:React.Dispatch<Reac
                     shouldPlay
                     isLooping
                     isMuted
-                    resizeMode="cover"
+                    resizeMode={ResizeMode.COVER}
                 />
 
 

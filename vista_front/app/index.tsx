@@ -13,7 +13,6 @@ export default function Index() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [inputValue, setInputValue] = useState('');
   const [savedText, setSavedText] = useState('');
-  const [isPulsing, setIsPulsing] = useState(false);
   const [message, setMessage] = useState<string>('');
   
   useEffect(() => {
