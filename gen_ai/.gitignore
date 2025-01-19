@@ -1,5 +1,8 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
 
-<<<<<<< HEAD
 # C extensions
 *.so
 
@@ -132,6 +135,7 @@ venv/
 ENV/
 env.bak/
 venv.bak/
+env
 
 # Spyder project settings
 .spyderproject
@@ -166,15 +170,8 @@ cython_debug/
 
 # PyPI configuration file
 .pypirc
-<<<<<<< HEAD
 
-vars.env
-<<<<<<< HEAD
-=======
-=======
 /node_modules
->>>>>>> f228134086c643e670a83c634299c35ef3d9c2e1
->>>>>>> peta
-=======
-/node_modules
->>>>>>> 00af88ff864109a922c67fbfd2ccbd152402bb90
+
+/vista-venv
+
