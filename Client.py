@@ -3,7 +3,8 @@ import json
 import websockets
 
 socketAddress = "ws://100.66.219.46:8080"
-
+username =  "Placeholder"
+sessionID = "Placeholder"
 
 class QuestionClient:
     def __init__(self):
@@ -58,8 +59,10 @@ class QuestionClient:
                 elif msg.get("response") == "usernameAlreadyTaken":
                     print("Username already taken.")
                 elif msg.get("response") == "signInSuccess":
+                    username = msg.get("username")
                     sessionID = msg.get("sessionID")
                 elif msg.get("response") == "signOutSuccess":
+                    del username
                     del sessionID
                 elif msg.get("response") == "waiting":
                     print("Waiting for a match...")

@@ -160,7 +160,7 @@ async def process_message(client, msg):
             sessionToken = str(uuid.uuid4())
             await addSessionToken(username, sessionToken)
             data = {"response": "signInSuccess",
-                "sessionToken": sessionToken}
+                "sessionToken": sessionToken, "username": username}
         else:
             data = {"response": "fail"}
         await client.send(json.dumps(data))
