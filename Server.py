@@ -3,9 +3,72 @@ from dotenv import load_dotenv
 import asyncio
 import json
 import websockets
-import hashlib
-import uuid
 import os
+import base64
+from pathlib import Path
+from gen_ai.backend_ai import VideoMaker
+
+def encode_image_to_base64(filepath):
+    """
+    Encodes an image file to a Base64 string.
+    """
+    file_path = Path(filepath)
+    if not file_path.is_file():
+        raise FileNotFoundError(f"File not found: {filepath}")
+    
+    with open(filepath, "rb") as file:
+        encoded_string = base64.b64encode(file.read()).decode('utf-8')
+    return encoded_string
+
+def send_image_as_json(filepath):
+    """
+    Creates a JSON object containing the Base64-encoded image data.
+    """
+    try:
+        encoded_image = encode_image_to_base64(filepath)
+        image_json = {
+            "filename": Path(filepath).name,
+            "data": encoded_image
+        }
+        return json.dumps(image_json)
+    except Exception as e:
+        return json.dumps({"error": str(e)})
+
+def encode_audio_to_base64(filepath):
+    """
+    Encodes an audio file to a Base64 string.
+    """
+    file_path = Path(filepath)
+    if not file_path.is_file():
+        raise FileNotFoundError(f"File not found: {filepath}")
+    
+    with open(filepath, "rb") as file:
+        encoded_string = base64.b64encode(file.read()).decode('utf-8')
+    return encoded_string
+
+def send_audio_as_json(filepath):
+    """
+    Creates a JSON object containing the Base64-encoded audio data.
+    """
+    try:
+        encoded_audio = encode_audio_to_base64(filepath)
+        audio_json = {
+            "filename": Path(filepath).name,
+            "data": encoded_audio
+        }
+        return json.dumps(audio_json)
+    except Exception as e:
+        return json.dumps({"error": str(e)})
+
+USER_STATE = {}
+"""
+USER_STATE[websocket] = {
+    "status": "idle" or "waiting" or "matched",
+    "question": str or None,
+    "answer": str or None,
+    "partner": websocket or None
+}
+"""
 
 load_dotenv("vars.env")
 
@@ -16,18 +79,7 @@ port = os.environ.get("Port")
 mongoClient = MongoClient(uri)
 database = mongoClient["Vista"]
 collection = database["VistaCluster"]
-
-sessionTokens = dict()
-
-async def addSessionToken(username, token):
-    sessionTokens[username] = token
-
-    async def expireToken():
-        await asyncio.sleep(86400)
-        if username in sessionTokens.keys() and sessionTokens[username] == token:
-            del sessionTokens[username]
-
-    asyncio.create_task(expireToken())
+usernames = {}
 
 def getData(path):
     data = collection.find()
@@ -101,17 +153,10 @@ def delData(path):
         else:
             collection.delete_one({"_id":target})
 
-USER_STATE = {}
-"""
-USER_STATE[websocket] = {
-    "status": "idle" or "waiting" or "matched",
-    "question": str or None,
-    "answer": str or None,
-    "partner": websocket or None
-}
-"""
-
 WAITING_QUEUE = []
+
+ip = "100.66.219.46"
+port = 1134
 
 async def match_two_clients(client_a, client_b):
     USER_STATE[client_a]["status"] = "matched"
@@ -131,104 +176,103 @@ async def match_two_clients(client_a, client_b):
 
 async def process_message(client, msg):
     mtype = msg.get("purpose")
-    
-    if mtype == "register":
-        username = msg.get("username", "")
-        password = msg.get("password", "")
-        
-        if getData(["Credentials", username]) == None:
-            hash_object = hashlib.sha256()
-            hash_object.update(password.encode())
-            hashed_password = hash_object.hexdigest()
-            setData(["Credentials", username, "password"], hashed_password)
-            
-            data = {"response": "registerSuccess",
-                    "result": "Registration Successful! Please Sign In."}
-        else:
-            data = {"response": "usernameAlreadyTaken",
-                    "result": "Username Already Taken!"}
-        await client.send(json.dumps(data))
-    elif mtype == "signIn":
-        username = msg.get("username", "")
-        password = msg.get("password", "")
 
-        hash_object = hashlib.sha256()
-        hash_object.update(password.encode())
-        hashed_password = hash_object.hexdigest()
-        
-        if getData(["Credentials", username, "password"]) == hashed_password:
-            sessionToken = str(uuid.uuid4())
-            await addSessionToken(username, sessionToken)
-            data = {"response": "signInSuccess",
-                "sessionToken": sessionToken, "username": username}
-        else:
-            data = {"response": "fail"}
-        await client.send(json.dumps(data))
-    elif mtype == "signOut":
-        sessionID = data["sessionToken"]
-        username = data["username"]
+    if mtype == "askQuestion":
+        if USER_STATE[client]["status"] == "idle":
+            question = msg.get("question", "")
+            USER_STATE[client]["question"] = question
+            USER_STATE[client]["status"] = "waiting"
 
-        if username in sessionTokens.keys() and sessionTokens[username] == sessionID:
-            del sessionTokens[username]
-            data = {"response": "signOutSuccess"}
-        else:
-            data = {"response": "fail"}
-        await client.send(json.dumps(data))
-    elif mtype == "askQuestion":
-        if username in sessionTokens.keys() and sessionTokens[username] == sessionID:
-            if USER_STATE[client]["status"] == "idle":
-                question = msg.get("question", "")
-                USER_STATE[client]["question"] = question
-                USER_STATE[client]["status"] = "waiting"
-
-                if WAITING_QUEUE:
-                    other = WAITING_QUEUE.pop(0)
-                    await match_two_clients(client, other)
-                else:
-                    WAITING_QUEUE.append(client)
-                    await client.send(json.dumps({"response": "waiting"}))
+            if WAITING_QUEUE:
+                other = WAITING_QUEUE.pop(0)
+                await match_two_clients(client, other)
             else:
-                print("Client is not idle, ignoring question")
+                WAITING_QUEUE.append(client)
+                await client.send(json.dumps({"response": "waiting"}))
         else:
-            data = {"response": "fail"}
-        await client.send(json.dumps(data))
+            print("Client is not idle, ignoring question")
 
     elif mtype == "provideAnswer":
-        if username in sessionTokens.keys() and sessionTokens[username] == sessionID:
-            if USER_STATE[client]["status"] == "matched":
-                USER_STATE[client]["answer"] = msg.get("answer", "")
-                partner = USER_STATE[client].get("partner")
+        if USER_STATE[client]["status"] == "matched":
+            USER_STATE[client]["answer"] = msg.get("answer", "")
+            partner = USER_STATE[client].get("partner")
 
-                if partner and USER_STATE[partner].get("answer") is not None:
-                    your_answer = USER_STATE[client]["answer"]
-                    partner_answer = USER_STATE[partner]["answer"]
+            if partner and USER_STATE[partner].get("answer") is not None:
+                your_answer = USER_STATE[client]["answer"]
+                partner_answer = USER_STATE[partner]["answer"]
+                
+                yourPastPerspectives = getData(["pastPerspectives", usernames[client]])
+                partnerPastPerspectives = getData(["pastPerspectives", usernames[partner]])
+                
+                if yourPastPerspectives == None:
+                    yourPastPerspectives = []
+                if partnerPastPerspectives == None:
+                    partnerPastPerspectives = []
+                
+                yourRecentPerspective = [USER_STATE[client["question"]], partner_answer]
+                partnerRecentPerspective = [USER_STATE[partner["question"]], your_answer]
+                
+                if len(yourPastPerspectives) < 5:
+                    yourPastPerspectives.append(yourRecentPerspective)
+                else:
+                    yourPastPerspectives.pop(0)
+                    yourPastPerspectives.append(yourRecentPerspective)
+                
+                if len(partnerPastPerspectives) < 5:
+                    partnerPastPerspectives.append(partnerRecentPerspective)
+                else:
+                    partnerPastPerspectives.pop(0)
+                    partnerPastPerspectives.append(partnerRecentPerspective)
+                
+                setData(["pastPerspectives", usernames[client]], yourPastPerspectives)
+                setData(["pastPerspectives", usernames[partner]], partnerPastPerspectives)
+                
+                yourPaths = VideoMaker().conv_resp_to_videos(USER_STATE[client]["question"], partner_answer, limit=1)
+                partnerPaths = VideoMaker().conv_resp_to_videos(USER_STATE[partner]["question"], your_answer, limit=1)
+                
+                yourAudio = yourPaths.pop()
+                partnerAudio = partnerPaths.pop()
+                
+                yourImage = send_image_as_json(f"./gen_ai/{yourPaths[0][2:]}")
+                partnerImage = send_image_as_json(f"./gen_ai/{partnerPaths[0][2:]}")    
+                
+                # You are no longer recieving just a singular text answer on each socket. Instead, you are recieving in "photo" a single base 64 encoded image, and in "audio" a single base 64 encoded audio file.
+                await client.send(json.dumps({
+                    "response": "answerReceived",
+                    "photo": yourImage,
+                    "audio": send_audio_as_json(f"./gen_ai/{yourAudio[2:]}")
+                }))
+                await partner.send(json.dumps({
+                    "response": "answerReceived",
+                    "photo": partnerImage,
+                    "audio": send_audio_as_json(f"./gen_ai/{partnerAudio[2:]}")
+                }))
 
-                    await client.send(json.dumps({
-                        "response": "answerReceived",
-                        "answer": partner_answer
-                    }))
-                    await partner.send(json.dumps({
-                        "response": "answerReceived",
-                        "answer": your_answer
-                    }))
-
-                    USER_STATE[client].update({
-                        "status": "idle",
-                        "question": None,
-                        "answer": None,
-                        "partner": None
-                    })
-                    USER_STATE[partner].update({
-                        "status": "idle",
-                        "question": None,
-                        "answer": None,
-                        "partner": None
-                    })
-            else:
-                print("Client is not matched, ignoring answer")
+                USER_STATE[client].update({
+                    "status": "idle",
+                    "question": None,
+                    "answer": None,
+                    "partner": None
+                })
+                USER_STATE[partner].update({
+                    "status": "idle",
+                    "question": None,
+                    "answer": None,
+                    "partner": None
+                })
         else:
-            data = {"response": "fail"}
-        await client.send(json.dumps(data))
+            print("Client is not matched, ignoring answer")
+    elif mtype == "login":
+        ### When logging in OR signing up, set the "purpose" to "login" regardless of if they are signing up or registering. Also include a "username" field that is a string, saying what their username is.
+        usernames[client] = msg.get("username")
+    elif mtype == "getRecentPerspectives":
+        ### In order to get recent perspectives, simply send a message at any time with the purpose "getRecentPerspectives". See comment below to see how the response works.
+        await client.send(json.dumps({
+            "response": "recentPerspectives",
+            "perspectives": getData(["pastPerspectives", usernames[client]])
+        }))
+        
+        # list of UP TO 5 most recent perspectives, in the format [[question, answer], [question, answer], ...] in REVERSE ORDER. so first pair is longest ago perspective that is still stored.
     else:
         print("Unknown Message")
 

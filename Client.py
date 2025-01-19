@@ -2,9 +2,7 @@ import asyncio
 import json
 import websockets
 
-socketAddress = "ws://100.66.219.46:8080"
-username =  "Placeholder"
-sessionID = "Placeholder"
+socketAddress = "ws://100.66.219.46:1134"
 
 class QuestionClient:
     def __init__(self):
@@ -14,37 +12,38 @@ class QuestionClient:
         self.previous_state = None
 
     async def connect(self):
+        """Connect to the server and start a background reader task."""
         self.websocket = await websockets.connect(socketAddress)
         print("Connected to server.")
         self.read_task = asyncio.create_task(self._read_messages())
 
     async def ask_question(self, question: str):
+        """Send a question to be matched with another user."""
         if not self.websocket or self.websocket.closed:
+            print("Not connected or already closed.")
             return
         msg = {"purpose": "askQuestion", "question": question}
         await self.websocket.send(json.dumps(msg))
         self.state = "waiting"
 
     async def provide_answer(self, answer: str):
+        """Send an answer to your matched partner's question."""
         if not self.websocket or self.websocket.closed:
+            print("Not connected or already closed.")
             return
         msg = {"purpose": "provideAnswer", "answer": answer}
         await self.websocket.send(json.dumps(msg))
         self.state = "waiting_for_partner"
 
-    async def sign_in(self, username: str, password: str):
-        if not self.websocket or self.websocket.closed:
-            return
-        msg = {"purpose": "signIn", "username": username, "password": password}
-        await self.websocket.send(json.dumps(msg))
-
     async def close(self):
+        """Close the WebSocket connection and stop reading."""
         if self.websocket and not self.websocket.closed:
             await self.websocket.close()
         if self.read_task:
             self.read_task.cancel()
 
     async def _read_messages(self):
+        """Continuously read and handle messages from the server."""
         try:
             async for raw_msg in self.websocket:
                 try:
@@ -52,27 +51,15 @@ class QuestionClient:
                 except json.JSONDecodeError:
                     print("[Error] Invalid JSON received:", raw_msg)
                     continue
-                if msg.get("response") == "fail":
-                    print("Server refused.")
-                elif msg.get("response") == "registerSuccess":
-                    print("Registration successful.")
-                elif msg.get("response") == "usernameAlreadyTaken":
-                    print("Username already taken.")
-                elif msg.get("response") == "signInSuccess":
-                    username = msg.get("username")
-                    sessionID = msg.get("sessionID")
-                elif msg.get("response") == "signOutSuccess":
-                    del username
-                    del sessionID
-                elif msg.get("response") == "waiting":
+
+                if msg.get("response") == "waiting":
                     print("Waiting for a match...")
                 elif msg.get("response") == "matchFound":
                     their_question = msg["question"]
                     print(f"[Matched!] Partner's question: {their_question}")
                     self.state = "matched"
                 elif msg.get("response") == "answerReceived":
-                    print(
-                        f"[Answer received!] Your partner's advice: {msg['answer']}")
+                    print(f"[Answer received!] Your partner's advice: {msg['answer']}")
                     self.state = "idle"
                 elif msg.get("response") == "partnerDisconnected":
                     print("[Notification] Your partner disconnected.")
@@ -87,7 +74,6 @@ class QuestionClient:
             print("Connection closed by server.")
         except Exception as e:
             print("Error in read loop:", e)
-
 
 async def main():
     client = QuestionClient()
@@ -111,9 +97,3 @@ async def main():
 
 if __name__ == "__main__":
     asyncio.run(main())
-
-"""
-    username = blah
-    password = blah
-    await client.sign_in(username, password)
-"""

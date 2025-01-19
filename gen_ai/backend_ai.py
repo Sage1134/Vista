@@ -1,15 +1,9 @@
 import torch
-
-# Verify GPU usage
-print("Num GPUs Available: ", torch.cuda.device_count())
-print("CUDA available: ", torch.cuda.is_available())
-
 from damo_version import DAMO_MODEL
 from openai import OpenAI
 from os import getenv
 from typing import List
 from dotenv import load_dotenv, find_dotenv
-import numpy as np
 import os
 from diffusers import AutoPipelineForText2Image
 
@@ -33,35 +27,41 @@ class VideoMaker:
         self.do_image = do_image 
         self.num_requests=0 # 0 if we overwrtite bread, 1 otherwise
         
-    def make_images(self, name:str, steps:List[str]):
+    def make_images(self, name:str, steps:List[str], limit=None)->List[str]:
         try:
             os.mkdir(name)
         except:
             print("Directory already exists.")
 
-        for i in range(len(steps)):
+        image_paths = []
+        lim = float('inf') if not limit else limit
+        for i in range(min(len(steps), lim)):
             picture_name = f"./{name}/picture{i+1}.png"
 
             prompt=steps[i]
             image = self.pipe(prompt=prompt, num_inference_steps=1, guidance_scale=0.0).images[0]
             print("Name", picture_name)
             image.save(picture_name)
+            image_paths.append(picture_name)
+        return image_paths
 
-    def conv_resp_to_videos(self, question:str, resp:str)->List[str]:
+    def conv_resp_to_videos(self, question:str, resp:str, limit=None)->List[str]:
         """Given a user's response to a question, return the list of paths where the videos & audio can be found."""
         output_path = f"response-{self.num_requests}"
 
         # Audio Stuff
         # va = np.random.choice(['ash', 'onyx'], size=1)[0]
-        with self.client.audio.speech.with_streaming_response.create(
-            model="tts-1",
-            voice='ash',
-            input=resp
-        ) as audio_response:
-            audio_response.stream_to_file(os.path.join(output_path, "voice.mp3"))
+        
+        # dies in python 3.9...
+        # with self.client.audio.speech.with_streaming_response.create(
+        #     model="tts-1",
+        #     voice='ash',
+        #     input=resp
+        # ) as audio_response:
+        #     audio_response.stream_to_file(os.path.join(output_path, "voice.mp3"))
+
 
         if self.do_image:
-              # Image Stuff
             self.messages.append({
                 "role":"user",
                 "content":f"""Person A asked "{question}" and person B responded "{resp}". Create a prompt that can be fed into a generative AI that creates an image with accompanying audio in the format that you think would best deliver the feedback to Person A. Output only the prompt as raw text with no extra details whatsoever."""
@@ -106,14 +106,15 @@ class VideoMaker:
                 res2 = res2.split('\n')
                 print(res2)
 
-                # Make & store the images based on the number of requests we've had so far
-                self.make_images(name=output_path, steps=res2)
+                output_paths = self.make_images(name=output_path, steps=res2, limit=limit)
+                output_paths.append(os.path.join(output_path, "voice.mp3"))
                 self.num_requests += 1
+                
+                return output_paths
             except Exception as e:
                 print(e)
 
         else:
-            # Video Stuff
             self.messages.append({
                 "role":"user",
                 "content":f"""Person A asked "{question}" and person B responded "{resp}". Create a prompt that can be fed into a generative AI that creates a video with accompanying audio in the format that you think would best deliver the feedback to Person A. Output only the prompt as raw text with no extra details whatsoever."""
@@ -158,7 +159,6 @@ class VideoMaker:
                 res2 = res2.split('\n')
                 print(res2)
 
-                # Make & store the videos based on the number of requests we've had so far
                 self.damo.make_videos(name=output_path, steps=res2)
                 self.num_requests += 1
             except Exception as e:
@@ -166,18 +166,7 @@ class VideoMaker:
 
 
 if __name__ == "__main__":
-    vmaker = VideoMaker(fps=3, do_image=True) # used to be 10 fps
-
-    # ChatGPT decides what output format is best
-        # e.g. Cooking bread -> Instructional video w/ audio
-        #       Should I end contact w/ friend -> One-to-one chat w/ audio
-
-    # bread just works ngl
-    from bread_example import HOW_TO_BAKE_BREAD, HOW_QUESTION
-    vmaker.conv_resp_to_videos(question=HOW_QUESTION, resp=HOW_TO_BAKE_BREAD)
-
-    # Test for should I quit my job as well
-        # Optimize for damo t2v 1.7b specifically
-        # "Should I quit my job?" should be translated to "generate a video of someone quitting their job"
-    from employment_example import HOW_TO_QUIT_JOB, HOW_QUESTION
-    vmaker.conv_resp_to_videos(question=HOW_QUESTION, resp=HOW_TO_QUIT_JOB)
+    vmaker = VideoMaker(fps=3, do_image=True)
+    
+    from bread_example import HOW_QUESTION, HOW_TO_BAKE_BREAD
+    #vmaker.conv_resp_to_videos(question=HOW_QUESTION, resp=HOW_TO_BAKE_BREAD, limit=1)
