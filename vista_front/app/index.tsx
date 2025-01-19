@@ -13,6 +13,8 @@ export default function Index() {
   const [inputValue, setInputValue] = useState('');
   const [savedText, setSavedText] = useState('');
   const [message, setMessage] = useState<string>('');
+
+
   
   // This function will be triggered when the user clicks the "Submit" button
   const handleSubmit = () => {
@@ -49,7 +51,7 @@ export default function Index() {
           </View>
           <TouchableOpacity
                   onPress={handleSubmit} // Trigger loading on submit button press
-                  className='w-48 h-48 bg-white border-solid border-black border-4 rounded-full shadow-md flex items-center self-center justify-center mt-32 mb-20'>
+                  className='w-48 h-48 bg-white border-solid border-black border-4 rounded-full shadow-md flex items-center self-center justify-center mt-6 mb-10'>
             <Image source={require('../assets/images/Logo.png')} className=" w-32 h-32 self-center" />
           </TouchableOpacity>
 
