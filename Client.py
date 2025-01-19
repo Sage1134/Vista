@@ -4,6 +4,7 @@ import websockets
 
 socketAddress = "ws://100.66.219.46:8080"
 
+
 class QuestionClient:
     def __init__(self):
         self.websocket = None
@@ -67,7 +68,8 @@ class QuestionClient:
                     print(f"[Matched!] Partner's question: {their_question}")
                     self.state = "matched"
                 elif msg.get("response") == "answerReceived":
-                    print(f"[Answer received!] Your partner's advice: {msg['answer']}")
+                    print(
+                        f"[Answer received!] Your partner's advice: {msg['answer']}")
                     self.state = "idle"
                 elif msg.get("response") == "partnerDisconnected":
                     print("[Notification] Your partner disconnected.")
@@ -82,6 +84,7 @@ class QuestionClient:
             print("Connection closed by server.")
         except Exception as e:
             print("Error in read loop:", e)
+
 
 async def main():
     client = QuestionClient()
